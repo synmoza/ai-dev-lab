@@ -81,8 +81,14 @@ Verifier = Callable[[str], VerificationResult]
 def run_loop(
     root: Path,
     verifier: Optional[Verifier] = None,
+    max_steps: Optional[int] = None,
 ) -> int:
-    """Run until pass, environment error, escalation, or budget exhaustion."""
+    """Run until pass, environment error, escalation, or budget exhaustion.
+
+    With ``max_steps``, pause after that many retryable rounds and return 1 so
+    the maker can change the code before the next step. Round budget and
+    same-failure limit still apply across steps.
+    """
 
     contract = _load_contract(root / ".ai-loop" / "loop-contract.yaml")
     state_path = root / ".ai-loop" / "state.yaml"
@@ -92,7 +98,12 @@ def run_loop(
         return 0 if state.status == "done" else 2
 
     execute = verifier or (lambda mode: _run_verifier(root, mode))
+    steps = 0
     while state.attempt < contract["max_rounds"]:
+        if max_steps is not None and steps >= max_steps:
+            _write_paused_status(state, contract["max_rounds"])
+            return 1
+        steps += 1
         result = execute(contract["verification_mode"])
         next_attempt = state.attempt + 1
         signature = _failure_signature(result)
@@ -172,6 +183,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--root", type=Path, required=True)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("run")
+    commands.add_parser("step")
     commands.add_parser("demo-repeated-failure")
     commands.add_parser("reset")
     commands.add_parser("status")
@@ -180,6 +192,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         if args.command == "run":
             return run_loop(root)
+        if args.command == "step":
+            return run_loop(root, max_steps=1)
         if args.command == "demo-repeated-failure":
             return run_loop(
                 root,
@@ -215,7 +229,32 @@ def _load_contract(path: Path) -> Dict[str, Any]:
 
 
 def _load_state(path: Path) -> LoopState:
+    """Load the local snapshot, or start fresh when none exists yet.
+
+    The snapshot is gitignored so loop runs never dirty the tracked tree.
+    A fresh state continues event numbering after any preserved events.
+    """
+
+    if not path.exists():
+        return LoopState(
+            status="ready",
+            attempt=0,
+            same_failure_count=0,
+            last_failure_signature=None,
+            next_sequence=_count_events(path.parent / "events.jsonl") + 1,
+            terminal_reason=None,
+        )
     return LoopState.from_dict(_load_json_object(path))
+
+
+def _count_events(path: Path) -> int:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return 0
+    except OSError as exc:
+        raise DataFormatError(f"cannot read {path.name}: {exc}") from exc
+    return sum(1 for line in lines if line.strip())
 
 
 def _load_json_object(path: Path) -> Dict[str, Any]:
@@ -387,6 +426,13 @@ def _write_terminal_status(state: LoopState) -> None:
     stream.write(
         f"loop terminal: {state.status}; "
         f"reason={state.terminal_reason}; attempts={state.attempt}\n"
+    )
+
+
+def _write_paused_status(state: LoopState, max_rounds: int) -> None:
+    sys.stderr.write(
+        f"loop paused: {state.status}; attempts={state.attempt}/{max_rounds}; "
+        "change the code, then run step again\n"
     )
 
 

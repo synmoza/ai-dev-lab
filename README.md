@@ -65,14 +65,31 @@ Scripts 會依序使用明示的 `PYTHON_BIN`、本 lab 的
 source .venv/bin/activate
 ```
 
+`PYTHON_BIN` 只應在 bootstrap 時指定，用來挑選建立 venv 的直譯器。
+若在之後的 shell 仍 export 它，verifier 會繞過 `.venv` 而回報
+`missing pytest`（exit 2）。
+
+### Windows：使用 WSL2
+
+在 Windows 上請於 WSL2 的 Linux 檔案系統（例如家目錄）中 clone，
+不要放在 `/mnt/c` 這類掛載路徑。若發行版內建的 Python 不是 3.12，
+可用 uv 取得與 CI 相同的版本，只在 bootstrap 時指定：
+
+```bash
+uv python install 3.12
+PYTHON_BIN="$(uv python find 3.12)" scripts/bootstrap.sh
+scripts/verify.sh full
+```
+
 ## 已驗證基線
 
 在隔離副本與 Python 3.12 環境執行 `scripts/verify.sh full`：
 
 - Ruff、Black、isort 全部通過。
-- `47 passed`。
-- Coverage `83.18%`，高於 contract 的 80%。
+- `50 passed`。
+- Coverage `82.35%`，高於 contract 的 80%。
 - macOS 本機驗證通過；GitHub Actions 會另跑 Linux gate。
+- Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）驗證通過。
 - Windows PowerShell bootstrap 尚未驗證。
 
 這些結果只適用於對應 commit 與 dependency profile；不要外推成

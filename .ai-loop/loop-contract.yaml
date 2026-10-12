@@ -8,7 +8,7 @@
       "merge, push, deploy, or contact external systems"
     ],
     "allowed_tasks": [
-      "TB-LAB-VERIFY"
+      "TB-LAB-001"
     ],
     "trigger": {
       "type": "human-command",

@@ -1,8 +1,8 @@
 {
   "queue": [
     {
-      "task_id": "TB-LAB-VERIFY",
-      "contract": "tasks/task-contract.md",
+      "task_id": "TB-LAB-001",
+      "contract": "tasks/TB-LAB-001.md",
       "status": "ready",
       "depends_on": []
     }

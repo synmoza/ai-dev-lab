@@ -14,6 +14,7 @@ evidence/runs/*
 !evidence/runs/.gitkeep
 evidence/loop-runs/*
 !evidence/loop-runs/.gitkeep
+.ai-loop/state.yaml
 .ai-loop/events.jsonl
 .ai-loop/checkpoints/*
 !.ai-loop/checkpoints/.gitkeep
