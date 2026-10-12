@@ -5,7 +5,7 @@
 | Path | Snapshot | Why | Authoritative for |
 |---|---|---|---|
 | `AGENTS.md` | current lab commit | repo map、command、stop | working rules |
-| `tasks/task-contract.md` | current lab commit | 本次 scope 與 acceptance | task outcome |
+| `tasks/TB-LAB-001.md` | current lab commit | 本次 scope 與 acceptance | task outcome |
 | `specs/task-board.md` | current lab commit | observable behavior | product behavior |
 | `policies/agent-authority.yaml` | current lab commit | tools、paths、side effects | Authority |
 | `src/task_board/` | baseline commit | current implementation | current behavior only |

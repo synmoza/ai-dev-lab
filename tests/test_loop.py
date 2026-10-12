@@ -94,6 +94,80 @@ def test_environment_error_blocks_without_retry(tmp_path: Path) -> None:
     assert _state(tmp_path)["attempt"] == 1
 
 
+def test_step_pauses_after_one_retryable_round(tmp_path: Path) -> None:
+    _write_loop_files(tmp_path)
+
+    code = run_loop(
+        tmp_path,
+        verifier=lambda mode: VerificationResult(1, "first failure\n"),
+        max_steps=1,
+    )
+
+    assert code == 1
+    assert _state(tmp_path)["status"] == "retrying"
+    assert _state(tmp_path)["attempt"] == 1
+
+
+def test_steps_with_new_evidence_resume_until_pass(tmp_path: Path) -> None:
+    _write_loop_files(tmp_path)
+    outputs = iter(
+        [
+            VerificationResult(1, "first failure\n"),
+            VerificationResult(1, "different failure after a fix\n"),
+            VerificationResult(0, "pass\n"),
+        ]
+    )
+
+    codes = [
+        run_loop(tmp_path, verifier=lambda mode: next(outputs), max_steps=1)
+        for _ in range(3)
+    ]
+
+    assert codes == [1, 1, 0]
+    assert _state(tmp_path)["status"] == "done"
+    assert _state(tmp_path)["attempt"] == 3
+
+
+def test_steps_with_same_failure_escalate(tmp_path: Path) -> None:
+    _write_loop_files(tmp_path)
+
+    codes = [
+        run_loop(
+            tmp_path,
+            verifier=lambda mode: VerificationResult(1, "same failure\n"),
+            max_steps=1,
+        )
+        for _ in range(2)
+    ]
+
+    assert codes == [1, 2]
+    assert _state(tmp_path)["status"] == "escalated"
+
+
+def test_missing_state_starts_fresh_after_preserved_events(tmp_path: Path) -> None:
+    _write_loop_files(tmp_path)
+    (tmp_path / ".ai-loop" / "state.yaml").unlink()
+    (tmp_path / ".ai-loop" / "events.jsonl").write_text(
+        '{"sequence": 1}\n{"sequence": 2}\n',
+        encoding="utf-8",
+    )
+
+    code = run_loop(
+        tmp_path,
+        verifier=lambda mode: VerificationResult(0, "pass\n"),
+    )
+
+    assert code == 0
+    assert _state(tmp_path)["status"] == "done"
+    assert _state(tmp_path)["next_sequence"] == 4
+    events = (
+        (tmp_path / ".ai-loop" / "events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    assert json.loads(events[-1])["sequence"] == 3
+
+
 def test_reset_preserves_events_and_evidence(tmp_path: Path) -> None:
     _write_loop_files(tmp_path)
     run_loop(

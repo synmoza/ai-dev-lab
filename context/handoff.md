@@ -5,7 +5,8 @@
 - Canonical baseline：`scripts/verify.sh fast`
 - Full gate：`scripts/verify.sh full`
 - Authority：`policies/agent-authority.yaml`
-- Durable Loop state：`.ai-loop/state.yaml`
+- Local Loop state：`.ai-loop/state.yaml`（gitignored；不存在時視為 `ready`，
+  跑 loop 不會弄髒 tracked tree）
 - Append-only events：`.ai-loop/events.jsonl`
 - Next safe action：先跑 fast baseline；若 exit 2，修環境而非修改 acceptance。
 - Human decision：任何 Scope、Spec、network 或外部副作用變更。

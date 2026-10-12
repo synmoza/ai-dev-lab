@@ -34,7 +34,6 @@ JSON_COMPATIBLE_YAML = (
     ROOT / "tasks" / "queue.yaml",
     ROOT / "policies" / "agent-authority.yaml",
     ROOT / ".ai-loop" / "loop-contract.yaml",
-    ROOT / ".ai-loop" / "state.yaml",
 )
 
 
@@ -184,8 +183,8 @@ def test_readme_discloses_pedagogical_boundary() -> None:
 
     assert "不是" in readme
     assert "production" in readme
-    assert "47 passed" in readme
-    assert "83.18%" in readme
+    assert "50 passed" in readme
+    assert "82.35%" in readme
     assert "GitHub Actions" in readme
     assert "Windows PowerShell" in readme
     assert project["project"]["version"] == "1.0.0"
@@ -194,7 +193,7 @@ def test_readme_discloses_pedagogical_boundary() -> None:
 
 
 def test_task_and_spec_acceptance_use_distinct_namespaces() -> None:
-    task = (ROOT / "tasks" / "task-contract.md").read_text(encoding="utf-8")
+    task = (ROOT / "tasks" / "TB-LAB-001.md").read_text(encoding="utf-8")
     spec = (ROOT / "specs" / "task-board.md").read_text(encoding="utf-8")
 
     assert "- TAC-01：" in task
@@ -305,7 +304,7 @@ def test_evidence_manifest_records_reproducibility_identity(
 def test_docs_distinguish_scope_from_runtime_isolation() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     spec = (ROOT / "specs" / "task-board.md").read_text(encoding="utf-8")
-    task = (ROOT / "tasks" / "task-contract.md").read_text(encoding="utf-8")
+    task = (ROOT / "tasks" / "TB-LAB-001.md").read_text(encoding="utf-8")
 
     assert "沒有 OS filesystem sandbox" in readme
     assert "不是 network isolation 證明" in readme

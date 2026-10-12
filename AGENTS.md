@@ -22,8 +22,11 @@
 1. Read the task, linked Spec, Context manifest, and Authority policy.
 2. Run `scripts/verify.sh fast` before editing.
 3. Keep the diff inside the allowed files.
-4. Run targeted checks, then the required fast or full verifier.
-5. Return changed files, commands, exit codes, Evidence, and known gaps.
+4. Run targeted checks, then `scripts/bounded-loop.sh step` as the gate.
+   Exit 1 means retryable: change the code and step again. Exit 2 means
+   `blocked` or `escalated`: stop and hand back to the human owner.
+5. Run the full verifier and return changed files, commands, exit codes,
+   Evidence, and known gaps.
 
 # Canonical commands
 
@@ -31,7 +34,8 @@
 - Verify: `scripts/verify.sh {fast|full}`
 - Task board: `scripts/guard-command.sh task-board ...`
 - Evidence: `scripts/collect-evidence.sh {fast|full}`
-- Bounded loop: `scripts/bounded-loop.sh {run|status|reset}`
+- Bounded loop: `scripts/bounded-loop.sh {step|run|status|reset}`
+- New task: copy `tasks/TEMPLATE.md`; only the human owner approves it.
 
 # Authority
 

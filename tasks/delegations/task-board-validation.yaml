@@ -11,7 +11,7 @@
       "readable_paths": [
         "AGENTS.md",
         "specs/task-board.md",
-        "tasks/task-contract.md",
+        "tasks/TB-LAB-001.md",
         "policies/agent-authority.yaml",
         "src/task_board/",
         "tests/",
