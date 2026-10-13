@@ -183,8 +183,8 @@ def test_readme_discloses_pedagogical_boundary() -> None:
 
     assert "不是" in readme
     assert "production" in readme
-    assert "90 passed" in readme
-    assert "82.74%" in readme
+    assert "103 passed" in readme
+    assert "89.35%" in readme
     assert "GitHub Actions" in readme
     assert "Windows PowerShell" in readme
     assert project["project"]["version"] == "1.0.0"

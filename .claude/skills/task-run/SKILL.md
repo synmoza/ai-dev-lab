@@ -13,13 +13,15 @@ the allowed scope are earlier work on this same task; build on them.
    If not, stop: only the human owner approves tasks.
 2. Read the task, the linked Spec section, `context/context-manifest.md`, and
    `policies/agent-authority.yaml`.
-3. Run `scripts/bounded-loop.sh status`. If it is not `ready`, stop: the
-   human owner resets the loop when approving a task, and you may not.
+3. Run `scripts/bounded-loop.sh status`. If it shows `retrying`, `escalated`,
+   `blocked`, or `aborted` for a different task, stop: the human owner must
+   resolve that task first, and you may not reset the loop.
 4. Run `scripts/verify.sh fast`. Exit 2 means fix the environment, not the code;
    stop and report. Exit 1 is acceptable only when every failing test is the
    target of this task; otherwise stop and report.
 5. Implement inside the task's Allowed scope only. Write tests first for each TAC.
-6. Run `scripts/bounded-loop.sh step`:
+6. Run `scripts/bounded-loop.sh step $0`. The loop binds to this task and
+   starts fresh automatically when the previous task is `done`:
    - exit 0: confirm a new `evidence/loop-runs/attempt-*` directory was
      created by this step, then continue to step 7. No new directory means
      the gate did not run; stop and report.

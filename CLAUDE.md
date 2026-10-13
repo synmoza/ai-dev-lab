@@ -21,5 +21,6 @@ needed and why; the human owner decides.
 # Workflow skills
 
 - `/task-new "<goal>"`: draft a task contract for the human to approve.
-- `/task-run TB-LAB-NNN`: maker flow with `scripts/bounded-loop.sh step`.
-- `/check TB-LAB-NNN`: read-only checker validation.
+- `/task-run TB-LAB-NNN [checker-base]`: maker flow with
+  `scripts/bounded-loop.sh step TB-LAB-NNN`.
+- `/check TB-LAB-NNN [base]`: read-only checker validation.

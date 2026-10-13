@@ -8,8 +8,9 @@
 3. 在 `tasks/queue.yaml` 加一筆 `{"task_id", "contract", "status": "ready",
    "depends_on"}`。
 4. 由 human owner commit 上述檔案；commit 即代表核准這張 task。
-5. Human owner 執行 `scripts/bounded-loop.sh reset`，讓 loop 從 `ready`
-   開始；否則上一張 task 的 `done` 會讓 `step` 不驗證就回 0。
+5. 不需要 reset：`scripts/bounded-loop.sh step TB-LAB-NNN` 會在上一張
+   task 為 `done` 時自動開始新 task。上一張若停在 `retrying`、`escalated`
+   或 `blocked`，human owner 先處理並 `reset`。
 刪掉本註解後再 commit。
 -->
 
@@ -53,7 +54,7 @@ Evidence：pytest output、coverage、diff、commit、exit code 與 known gaps�
 
 - Agent read/write scope：依 `policies/agent-authority.yaml` 的 maker／checker 角色。
 - Execute：`scripts/verify.sh`、`scripts/guard-command.sh` allowlist、
-  `scripts/bounded-loop.sh step`。
+  `scripts/bounded-loop.sh step TB-LAB-NNN`。
 - Merge、push、deploy、外部訊息：不在授權 scope，由 human owner 執行。
 
 ## Stop and escalate
