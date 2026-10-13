@@ -15,6 +15,54 @@ def _environment() -> Dict[str, str]:
     return environment
 
 
+def _copy_tracked_files(source: Path, destination: Path) -> None:
+    """Copy only the files `git ls-files` lists; never read untracked files."""
+    listed = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=source,
+        check=True,
+        capture_output=True,
+    ).stdout.decode("utf-8")
+    destination.mkdir(parents=True)
+    for relative in filter(None, listed.split("\0")):
+        source_file = source / relative
+        if not source_file.is_symlink() and not source_file.is_file():
+            continue
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_file, target, follow_symlinks=False)
+
+
+def test_copy_tracked_files_skips_unreadable_untracked_file(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    (source / "nested").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q"], cwd=source, check=True)
+    tracked = source / "nested" / "tracked.txt"
+    tracked.write_text("tracked\n", encoding="utf-8")
+    subprocess.run(["git", "add", "nested/tracked.txt"], cwd=source, check=True)
+    untracked = source / ".untracked-placeholder"
+    untracked.write_text("secret\n", encoding="utf-8")
+    untracked.chmod(0o000)
+    destination = tmp_path / "copy"
+
+    try:
+        _copy_tracked_files(source, destination)
+    finally:
+        untracked.chmod(0o600)
+
+    copied = sorted(
+        path.relative_to(destination).as_posix()
+        for path in destination.rglob("*")
+        if path.is_file()
+    )
+    assert copied == ["nested/tracked.txt"]
+    assert (destination / "nested" / "tracked.txt").read_text(
+        encoding="utf-8"
+    ) == "tracked\n"
+
+
 def test_guard_rejects_unlisted_action() -> None:
     completed = subprocess.run(
         ["bash", "scripts/guard-command.sh", "delete-everything"],
@@ -119,19 +167,7 @@ def test_control_scripts_classify_failures_deterministically(
 
 def test_evidence_collector_rejects_tracked_dirty_source(tmp_path: Path) -> None:
     lab_copy = tmp_path / "ai-dev-lab"
-    shutil.copytree(
-        ROOT,
-        lab_copy,
-        ignore=shutil.ignore_patterns(
-            ".git",
-            ".venv",
-            "runtime",
-            ".pytest_cache",
-            ".ruff_cache",
-            ".coverage",
-            "htmlcov",
-        ),
-    )
+    _copy_tracked_files(ROOT, lab_copy)
     subprocess.run(["git", "init", "-q"], cwd=lab_copy, check=True)
     subprocess.run(
         ["git", "config", "user.name", "Evidence Test"],
@@ -149,6 +185,17 @@ def test_evidence_collector_rejects_tracked_dirty_source(tmp_path: Path) -> None
         cwd=lab_copy,
         check=True,
     )
+    source_files, copy_files = (
+        subprocess.run(
+            ["git", "ls-files"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        for repo in (ROOT, lab_copy)
+    )
+    assert copy_files == source_files
     readme = lab_copy / "README.md"
     readme.write_text(
         readme.read_text(encoding="utf-8") + "\ntracked dirty probe\n",
