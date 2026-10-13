@@ -9,8 +9,14 @@
     {
       "task_id": "TB-LAB-002",
       "contract": "tasks/TB-LAB-002.md",
-      "status": "ready",
+      "status": "done",
       "depends_on": ["TB-LAB-001"]
+    },
+    {
+      "task_id": "TB-LAB-003",
+      "contract": "tasks/TB-LAB-003.md",
+      "status": "ready",
+      "depends_on": []
     }
   ]
 }

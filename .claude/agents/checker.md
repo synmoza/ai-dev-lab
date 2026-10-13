@@ -19,8 +19,13 @@ Procedure:
 
 1. Read the task contract named in your prompt (`tasks/TB-LAB-NNN.md`), the
    linked Spec section, and `AGENTS.md`.
-2. Run `git status` and `git diff` against the base the prompt names (default
-   `main`). Confirm every changed path is inside the task's Allowed scope.
+2. Run `git status` and `git diff` against the base the prompt names. With no
+   base, use the task's approval commit:
+   `git log --diff-filter=A --format=%h -- tasks/TB-LAB-NNN.md`. Commits at or
+   before that base belong to the human owner and are not the maker's scope.
+   Confirm every changed path after the base is inside the task's Allowed
+   scope. A README baseline update is the human owner's step after you pass;
+   if one appears after the base, report it as out of scope.
    Empty untracked dotfiles in the repo root (`.bashrc`, `.gitconfig`,
    `.mcp.json`, `.idea`, `.vscode`, and similar) are mount placeholders the
    Bash sandbox creates during a session and removes afterwards; list them

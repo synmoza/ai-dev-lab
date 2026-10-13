@@ -20,7 +20,11 @@ Run task $0 as the maker. Follow `AGENTS.md`; this skill only fixes the order.
    - exit 2: stop. Report the state from `scripts/bounded-loop.sh status` and
      hand back to the human owner. Do not reset the loop yourself.
 6. Run `scripts/verify.sh full`.
-7. Delegate to the `checker` subagent with the task id and base `main`.
+7. Find the approval commit with
+   `git log --diff-filter=A --format=%h -- tasks/$0.md` and delegate to the
+   `checker` subagent with the task id and that commit as the base.
 8. Report: status, changed files, TAC/SAC mapping, commands with exit codes,
    loop evidence paths, the checker decision, and known gaps. Propose a commit
-   message, but let the human decide whether to commit.
+   message, but let the human decide whether to commit. If the test count or
+   coverage changed, say so: the human owner updates the README baseline after
+   the checker passes; it is not part of the maker's diff.
