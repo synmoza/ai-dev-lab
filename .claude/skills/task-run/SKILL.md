@@ -1,10 +1,13 @@
 ---
 description: Run one approved task end to end as the maker, using the bounded loop as the gate and the checker subagent for acceptance.
-argument-hint: TB-LAB-NNN
+argument-hint: TB-LAB-NNN [checker-base]
 disable-model-invocation: true
 ---
 
 Run task $0 as the maker. Follow `AGENTS.md`; this skill only fixes the order.
+A second argument, if given, is the checker base: the human owner passes it
+when the contract was amended after approval. Existing uncommitted changes in
+the allowed scope are earlier work on this same task; build on them.
 
 1. Confirm `tasks/$0.md` exists and `tasks/queue.yaml` lists $0 as `ready`.
    If not, stop: only the human owner approves tasks.
@@ -25,9 +28,9 @@ Run task $0 as the maker. Follow `AGENTS.md`; this skill only fixes the order.
    - exit 2: stop. Report the state from `scripts/bounded-loop.sh status` and
      hand back to the human owner. Do not reset the loop yourself.
 7. Run `scripts/verify.sh full`.
-8. Find the approval commit with
-   `git log --diff-filter=A --format=%h -- tasks/$0.md` and delegate to the
-   `checker` subagent with the task id and that commit as the base.
+8. Delegate to the `checker` subagent with the task id and a base: `$1` if
+   it was given, otherwise the approval commit from
+   `git log --diff-filter=A --format=%h -- tasks/$0.md`.
 9. Report: status, changed files, TAC/SAC mapping, commands with exit codes,
    loop evidence paths, the checker decision, and known gaps. Propose a commit
    message, but let the human decide whether to commit. If the test count or

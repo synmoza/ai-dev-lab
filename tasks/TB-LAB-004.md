@@ -45,6 +45,11 @@
   `tests/test_loop.py` 測試不修改也全部通過。
 - TAC-08：`scripts/verify.sh full` 通過並達 80% coverage；checker 在 sandbox
   內執行也 exit 0。
+- TAC-09（human owner 於實作後追加）：目前狀態為 `retrying`、`escalated`、
+  `blocked` 或 `aborted` 時，不論是否綁定任務，`step <其他 ID>` 回 exit 2，
+  訊息指出目前停在哪張任務與哪個狀態，狀態檔與 `events.jsonl` 都不變。
+  只有目前狀態為 `ready`、`done`，或狀態檔不存在時才能換任務。TAC-01 的
+  「從 attempt 0 重新開始」以本條為前提。
 
 | Task acceptance | Spec／gate 對應 |
 |---|---|
@@ -56,10 +61,14 @@
 | TAC-06 | Spec Evidence plan；exit 2 慣例 |
 | TAC-07 | 既有行為不得退化 |
 | TAC-08 | Task-only verification gate |
+| TAC-09 | Spec Evidence plan；換任務不得繞過 escalate／blocked |
 
 本 task 不新增或修改產品行為 SAC。
 
 Evidence：pytest output、coverage、diff、commit、exit code、checker decision 與 known gaps。
+
+追加 TAC-09 的原因：審查發現先 step 另一個既有任務 ID 再換回來，可以把
+`escalated` 洗成 `done`。追加後 checker 以追加 commit 為基準驗收全部 TAC。
 
 Known gap（human owner 已接受）：`.ai-loop/loop-contract.yaml` 的
 `allowed_tasks` 仍為 `["TB-LAB-001"]`，loop 不讀這個欄位；之後另行決定刪除或啟用。
