@@ -27,7 +27,8 @@
    `blocked` or `escalated`: stop and hand back to the human owner.
 5. Run the full verifier and return changed files, commands, exit codes,
    Evidence, and known gaps.
-6. The checker validates against the task's approval commit. README baseline
+6. The checker validates against the task's approval commit. When approving
+   a task, the human owner resets the loop so it starts at `ready`. README baseline
    numbers (test count, coverage) are updated by the human owner after the
    checker passes, never in the maker's diff.
 
