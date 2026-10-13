@@ -134,3 +134,83 @@ def test_cli_creates_custom_store_parent(
     assert "TB-001 [todo] medium | Nested store" in captured.out
     assert captured.err == ""
     assert store.exists()
+
+
+def test_cli_delete_reports_task_and_keeps_others(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    store = tmp_path / "tasks.json"
+    base = ["--store", str(store)]
+    assert main([*base, "add", "First", "--priority", "high"]) == 0
+    assert main([*base, "add", "Second", "--priority", "low"]) == 0
+    assert main([*base, "add", "Third", "--priority", "medium"]) == 0
+    assert main([*base, "complete", "TB-003"]) == 0
+    capsys.readouterr()
+
+    assert main([*base, "delete", "TB-002"]) == 0
+    assert main([*base, "list"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == [
+        "deleted TB-002 [todo] low | Second",
+        "TB-001 [todo] high | First",
+        "TB-003 [done] medium | Third",
+    ]
+    assert captured.err == ""
+
+
+def test_cli_delete_unknown_task_exits_2(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    store = tmp_path / "tasks.json"
+    base = ["--store", str(store)]
+    assert main([*base, "add", "Keep me"]) == 0
+    before = store.read_bytes()
+    capsys.readouterr()
+
+    code = main([*base, "delete", "TB-999"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert captured.out == ""
+    assert "task not found: TB-999" in captured.err
+    assert "Traceback" not in captured.err
+    assert store.read_bytes() == before
+
+
+def test_cli_delete_without_store_exits_2(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    store = tmp_path / "tasks.json"
+
+    code = main(["--store", str(store), "delete", "TB-001"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert "task not found: TB-001" in captured.err
+    assert not store.exists()
+
+
+def test_cli_delete_rejects_corrupt_store(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    store = tmp_path / "tasks.json"
+    store.write_text("{broken", encoding="utf-8")
+
+    code = main(["--store", str(store), "delete", "TB-001"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert "cannot read task store" in captured.err
+    assert store.read_text(encoding="utf-8") == "{broken"
+
+
+def test_cli_delete_accepts_exactly_one_id(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--store", str(tmp_path / "tasks.json"), "delete", "TB-001", "TB-002"])
+
+    assert excinfo.value.code == 2
