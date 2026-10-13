@@ -16,7 +16,7 @@ Reference implementation 以 JSON array 保存 task。可觀察行為由下列 `
 
 ## Scope
 
-- Init、add、list、show、complete。
+- Init、add、list、show、complete、delete。
 - Local JSON store。
 - Stable text output 與 exit 0／2。
 
@@ -39,6 +39,11 @@ Reference implementation 以 JSON array 保存 task。可觀察行為由下列 `
   gitignored 的 `runtime/`。
 - SAC-09：`--store` 接受使用者指定的本機路徑並可建立 parent directory；
   CLI 不提供 OS path confinement。
+- SAC-10：delete 以 atomic save 移除單一既有 task，其餘 task 不變，並輸出
+  被刪除的 task；未知 ID 或 store 不存在時回 exit 2，且不建立或改寫 store。
+- SAC-11：ID 分配仍為現存最大編號 + 1；不刪除時 ID 單調遞增。刪除非最大
+  編號不會讓該 ID 被重用；刪除最大編號後該 ID 可能被重新分配（store 不保存
+  額外 counter）。永不重用 ID 需另立 Spec 變更 store 格式。
 
 ## Examples and edge cases
 
@@ -46,6 +51,8 @@ Reference implementation 以 JSON array 保存 task。可觀察行為由下列 `
 - 空白 title：拒絕，store 不得被建立。
 - Corrupt store：拒絕，不得以空 array 覆蓋。
 - `Keep $(commands) as plain text`：保留原文，不執行 command substitution。
+- 刪除：`deleted TB-002 [todo] high | 建立第一份 Evidence`；不提供確認提示，
+  也不提供 undo。
 
 ## Constraints and compatibility
 

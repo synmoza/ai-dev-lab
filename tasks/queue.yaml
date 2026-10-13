@@ -3,8 +3,14 @@
     {
       "task_id": "TB-LAB-001",
       "contract": "tasks/TB-LAB-001.md",
-      "status": "ready",
+      "status": "done",
       "depends_on": []
+    },
+    {
+      "task_id": "TB-LAB-002",
+      "contract": "tasks/TB-LAB-002.md",
+      "status": "ready",
+      "depends_on": ["TB-LAB-001"]
     }
   ]
 }

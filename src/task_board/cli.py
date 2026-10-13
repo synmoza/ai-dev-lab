@@ -39,6 +39,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     complete_parser = commands.add_parser("complete", help="complete one task")
     complete_parser.add_argument("task_id")
+
+    delete_parser = commands.add_parser("delete", help="delete one task")
+    delete_parser.add_argument("task_id")
     return parser
 
 
@@ -65,6 +68,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 0
         if args.command == "complete":
             _write_output(f"completed {_format_task(service.complete(args.task_id))}")
+            return 0
+        if args.command == "delete":
+            _write_output(f"deleted {_format_task(service.delete(args.task_id))}")
             return 0
     except TaskBoardError as exc:
         sys.stderr.write(f"task-board error: {exc}\n")

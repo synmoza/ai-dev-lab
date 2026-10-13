@@ -172,3 +172,29 @@ def test_evidence_collector_rejects_tracked_dirty_source(tmp_path: Path) -> None
     assert (run / "status.txt").read_text(encoding="utf-8").strip()
     assert (run / "change.diff").read_text(encoding="utf-8").strip()
     assert "verification not run" in (run / "verifier.out").read_text(encoding="utf-8")
+
+
+def test_guard_delete_treats_shell_syntax_as_plain_id(tmp_path: Path) -> None:
+    store = tmp_path / "tasks.json"
+    task_id = "$(touch pwned)"
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "guard-command.sh"),
+            "task-board",
+            "--store",
+            str(store),
+            "delete",
+            task_id,
+        ],
+        cwd=tmp_path,
+        env=_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    assert f"task not found: {task_id}" in completed.stderr
+    assert not (tmp_path / "pwned").exists()
+    assert not (ROOT / "pwned").exists()

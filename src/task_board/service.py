@@ -54,6 +54,12 @@ class TaskService:
         )
         return completed
 
+    def delete(self, task_id: str) -> Task:
+        tasks = self.repository.load()
+        deleted = _find_task(tasks, task_id)
+        self.repository.save(task for task in tasks if task.task_id != task_id)
+        return deleted
+
 
 def _task_number(task: Task) -> int:
     return int(task.task_id.removeprefix("TB-"))
