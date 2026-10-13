@@ -1,0 +1,90 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/verify.sh fast)",
+      "Bash(scripts/verify.sh full)",
+      "Bash(scripts/guard-command.sh task-board *)",
+      "Bash(scripts/guard-command.sh git-status)",
+      "Bash(scripts/bounded-loop.sh step)",
+      "Bash(scripts/bounded-loop.sh status)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
+    ],
+    "ask": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(scripts/bounded-loop.sh run)",
+      "Bash(dangerouslyDisableSandbox:true)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(git remote *)",
+      "Bash(git config *)",
+      "Bash(gh *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(sudo *)",
+      "Bash(rm -rf *)",
+      "Bash(pip *)",
+      "Bash(scripts/bootstrap.sh *)",
+      "Bash(scripts/collect-evidence.sh *)",
+      "Bash(scripts/bounded-loop.sh reset)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "allowUnsandboxedCommands": false,
+    "failIfUnavailable": true,
+    "filesystem": {
+      "denyWrite": [
+        "./.claude",
+        "./.github",
+        "./AGENTS.md",
+        "./CLAUDE.md",
+        "./README.md",
+        "./constraints",
+        "./context",
+        "./policies",
+        "./pyproject.toml",
+        "./scripts",
+        "./specs",
+        "./tasks",
+        "./.ai-loop/loop-contract.yaml"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.git-credentials",
+        "~/.config/gh"
+      ]
+    },
+    "network": {
+      "allowedDomains": []
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/authority_guard.py\"",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}

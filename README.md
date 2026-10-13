@@ -86,7 +86,7 @@ scripts/verify.sh full
 在隔離副本與 Python 3.12 環境執行 `scripts/verify.sh full`：
 
 - Ruff、Black、isort 全部通過。
-- `50 passed`。
+- `76 passed`。
 - Coverage `82.35%`，高於 contract 的 80%。
 - macOS 本機驗證通過；GitHub Actions 會另跑 Linux gate。
 - Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）驗證通過。
@@ -136,10 +136,28 @@ directory；它沒有提供作業系統層的 path confinement。
 - Approval、merge、push、deploy、刪除與對外訊息都不在教學 Agent
   Authority 內；這是 repo policy，不代表底層程序有 OS sandbox。
 
+## Claude Code 強制層（選用）
+
+在 Linux／WSL2 以 Claude Code 操作本 lab 時，`.claude/` 把上述 policy
+變成實際阻擋。以上安全邊界描述的是 lab 本身；下列機制只在 Claude Code
+session 內生效，不保護其他程序。
+
+- `CLAUDE.md` 匯入 `AGENTS.md`，並列出 `/task-new`、`/task-run`、`/check`。
+- `.claude/hooks/authority_guard.py`：PreToolUse hook 讀
+  `policies/agent-authority.yaml`。主對話是 maker，只能寫 `writable_paths`；
+  `checker` subagent 不能寫檔，Bash 只能跑 verifier 與唯讀 Git。
+  無法判讀的呼叫一律擋下（fail closed）。
+- `.claude/settings.json`：deny push、merge、網路工具、bootstrap、
+  Evidence 收集與 loop reset；`git add`／`git commit` 需人確認。
+- Bash sandbox（bubblewrap＋socat）：Spec、task、policy、scripts 與設定
+  路徑 OS 層唯讀，無對外網路，停用 unsandboxed retry；sandbox 起不來時
+  Claude Code 直接拒絕啟動。
+
 ## Artifact 地圖
 
 ```text
 AGENTS.md                     repo map、命令、stop rules
+CLAUDE.md + .claude/          Claude Code 的 hook、權限、sandbox、checker、skills
 tasks/                        task 與 delegation contracts
 context/                      context manifest 與 handoff
 specs/                        行為、acceptance、non-goals
