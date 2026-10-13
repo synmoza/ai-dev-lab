@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -15,6 +16,8 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 from task_board.domain import DataFormatError
 
 TERMINAL_STATUSES = frozenset({"done", "blocked", "escalated", "aborted"})
+SWITCHABLE_STATUSES = frozenset({"ready", "done"})
+TASK_ID_PATTERN = re.compile(r"TB-LAB-[0-9]{3}")
 
 
 @dataclass(frozen=True)
@@ -35,6 +38,7 @@ class LoopState:
     last_failure_signature: Optional[str]
     next_sequence: int
     terminal_reason: Optional[str]
+    task_id: Optional[str] = None
 
     @classmethod
     def from_dict(cls, raw: Dict[str, Any]) -> "LoopState":
@@ -46,7 +50,8 @@ class LoopState:
             "next_sequence",
             "terminal_reason",
         }
-        if set(raw) != required:
+        # Snapshots written before task binding have no task_id: unbound.
+        if set(raw) - {"task_id"} != required:
             raise DataFormatError("loop state has unexpected fields")
         state = cls(
             status=_require_string(raw, "status"),
@@ -55,6 +60,7 @@ class LoopState:
             last_failure_signature=_optional_string(raw, "last_failure_signature"),
             next_sequence=_require_positive_int(raw, "next_sequence"),
             terminal_reason=_optional_string(raw, "terminal_reason"),
+            task_id=_optional_string(raw, "task_id") if "task_id" in raw else None,
         )
         if state.status not in {
             "ready",
@@ -65,14 +71,17 @@ class LoopState:
         return state
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "attempt": self.attempt,
-            "last_failure_signature": self.last_failure_signature,
-            "next_sequence": self.next_sequence,
-            "same_failure_count": self.same_failure_count,
-            "status": self.status,
-            "terminal_reason": self.terminal_reason,
-        }
+        return _with_task_id(
+            {
+                "attempt": self.attempt,
+                "last_failure_signature": self.last_failure_signature,
+                "next_sequence": self.next_sequence,
+                "same_failure_count": self.same_failure_count,
+                "status": self.status,
+                "terminal_reason": self.terminal_reason,
+            },
+            self.task_id,
+        )
 
 
 Verifier = Callable[[str], VerificationResult]
@@ -82,17 +91,34 @@ def run_loop(
     root: Path,
     verifier: Optional[Verifier] = None,
     max_steps: Optional[int] = None,
+    task_id: Optional[str] = None,
 ) -> int:
     """Run until pass, environment error, escalation, or budget exhaustion.
 
     With ``max_steps``, pause after that many retryable rounds and return 1 so
     the maker can change the code before the next step. Round budget and
     same-failure limit still apply across steps.
+
+    With ``task_id``, bind the loop to that task. A different task, or no
+    snapshot at all, starts again from attempt 0; the same task resumes, so
+    its terminal decision still stands. Switching is refused unless the
+    current snapshot is ``ready`` or ``done``, so a retrying, escalated,
+    blocked, or aborted loop cannot be cleared by naming another task.
     """
 
+    if task_id is not None:
+        _validate_task_id(root, task_id)
     contract = _load_contract(root / ".ai-loop" / "loop-contract.yaml")
     state_path = root / ".ai-loop" / "state.yaml"
+    state_exists = state_path.exists()
     state = _load_state(state_path)
+    if task_id is not None and (not state_exists or state.task_id != task_id):
+        if state_exists and state.status not in SWITCHABLE_STATUSES:
+            raise DataFormatError(
+                f"loop is {state.status} on task {state.task_id or 'unbound'}; "
+                f"cannot switch to {task_id} until the human owner resolves it"
+            )
+        state = _start_task(root, state, task_id)
     if state.status in TERMINAL_STATUSES:
         _write_terminal_status(state)
         return 0 if state.status == "done" else 2
@@ -113,6 +139,7 @@ def run_loop(
             next_attempt,
             result,
             signature,
+            state.task_id,
         )
         status, reason = _decide(
             result=result,
@@ -128,6 +155,7 @@ def run_loop(
             last_failure_signature=signature,
             next_sequence=state.next_sequence + 1,
             terminal_reason=reason if status in TERMINAL_STATUSES else None,
+            task_id=state.task_id,
         )
         _write_json_atomic(state_path, next_state.to_dict())
         _append_event(
@@ -137,12 +165,45 @@ def run_loop(
             to_status=status,
             reason=reason,
             evidence_ref=evidence_ref,
+            task_id=state.task_id,
         )
         state = next_state
         if status != "retrying":
             _write_terminal_status(state)
             return 0 if status == "done" else 2
     raise DataFormatError("loop stopped without a terminal decision")
+
+
+def _validate_task_id(root: Path, task_id: str) -> None:
+    if not TASK_ID_PATTERN.fullmatch(task_id):
+        raise DataFormatError("task id must look like TB-LAB-NNN")
+    if not (root / "tasks" / f"{task_id}.md").is_file():
+        raise DataFormatError(f"task contract not found: tasks/{task_id}.md")
+
+
+def _start_task(root: Path, old_state: LoopState, task_id: str) -> LoopState:
+    """Start a bound task at attempt 0 without deleting prior history."""
+
+    new_state = LoopState(
+        status="ready",
+        attempt=0,
+        same_failure_count=0,
+        last_failure_signature=None,
+        next_sequence=old_state.next_sequence + 1,
+        terminal_reason=None,
+        task_id=task_id,
+    )
+    _write_json_atomic(root / ".ai-loop" / "state.yaml", new_state.to_dict())
+    _append_event(
+        root=root,
+        sequence=old_state.next_sequence,
+        from_status=old_state.status,
+        to_status="ready",
+        reason="new-task-started",
+        evidence_ref=None,
+        task_id=task_id,
+    )
+    return new_state
 
 
 def reset_loop(root: Path) -> int:
@@ -183,7 +244,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--root", type=Path, required=True)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("run")
-    commands.add_parser("step")
+    step = commands.add_parser("step")
+    step.add_argument("task_id", nargs="?")
     commands.add_parser("demo-repeated-failure")
     commands.add_parser("reset")
     commands.add_parser("status")
@@ -193,7 +255,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "run":
             return run_loop(root)
         if args.command == "step":
-            return run_loop(root, max_steps=1)
+            return run_loop(root, max_steps=1, task_id=args.task_id)
         if args.command == "demo-repeated-failure":
             return run_loop(
                 root,
@@ -350,6 +412,7 @@ def _persist_verifier_result(
     attempt: int,
     result: VerificationResult,
     signature: Optional[str],
+    task_id: Optional[str] = None,
 ) -> str:
     timestamp = _utc_now().strftime("%Y%m%dT%H%M%S%fZ")
     relative = Path("evidence") / "loop-runs" / (f"attempt-{attempt:03d}-{timestamp}")
@@ -358,12 +421,15 @@ def _persist_verifier_result(
     (run_dir / "verifier.out").write_text(result.output, encoding="utf-8")
     _write_json_atomic(
         run_dir / "result.json",
-        {
-            "attempt": attempt,
-            "exit_code": result.exit_code,
-            "failure_signature": signature,
-            "recorded_at": _utc_now().isoformat(),
-        },
+        _with_task_id(
+            {
+                "attempt": attempt,
+                "exit_code": result.exit_code,
+                "failure_signature": signature,
+                "recorded_at": _utc_now().isoformat(),
+            },
+            task_id,
+        ),
     )
     return str(relative)
 
@@ -375,6 +441,7 @@ def _append_event(
     to_status: str,
     reason: str,
     evidence_ref: Optional[str],
+    task_id: Optional[str] = None,
 ) -> None:
     event = {
         "actor": "bounded-loop-driver",
@@ -386,11 +453,20 @@ def _append_event(
         "time": _utc_now().isoformat(),
         "to": to_status,
     }
+    event = _with_task_id(event, task_id)
     path = root / ".ai-loop" / "events.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True))
         handle.write("\n")
+
+
+def _with_task_id(payload: Dict[str, Any], task_id: Optional[str]) -> Dict[str, Any]:
+    """Record the bound task; unbound records keep their original shape."""
+
+    if task_id is not None:
+        payload["task_id"] = task_id
+    return payload
 
 
 def _write_json_atomic(path: Path, payload: Dict[str, Any]) -> None:
