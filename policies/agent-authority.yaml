@@ -5,9 +5,11 @@
     "maker": {
       "readable_paths": [
         ".ai-loop/",
+        ".claude/",
         ".github/",
         ".gitignore",
         "AGENTS.md",
+        "CLAUDE.md",
         "LICENSE",
         "README.md",
         "constraints/",
@@ -63,9 +65,11 @@
     "checker": {
       "readable_paths": [
         ".ai-loop/",
+        ".claude/",
         ".github/",
         ".gitignore",
         "AGENTS.md",
+        "CLAUDE.md",
         "LICENSE",
         "README.md",
         "constraints/",
