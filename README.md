@@ -86,7 +86,7 @@ scripts/verify.sh full
 在隔離副本與 Python 3.12 環境執行 `scripts/verify.sh full`：
 
 - Ruff、Black、isort 全部通過。
-- `89 passed`。
+- `90 passed`。
 - Coverage `82.74%`，高於 contract 的 80%。
 - macOS 本機驗證通過；GitHub Actions 會另跑 Linux gate。
 - Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）驗證通過。

@@ -8,6 +8,8 @@
 3. 在 `tasks/queue.yaml` 加一筆 `{"task_id", "contract", "status": "ready",
    "depends_on"}`。
 4. 由 human owner commit 上述檔案；commit 即代表核准這張 task。
+5. Human owner 執行 `scripts/bounded-loop.sh reset`，讓 loop 從 `ready`
+   開始；否則上一張 task 的 `done` 會讓 `step` 不驗證就回 0。
 刪掉本註解後再 commit。
 -->
 
@@ -58,7 +60,8 @@ Evidence：pytest output、coverage、diff、commit、exit code 與 known gaps�
 
 - Acceptance 需要改動 `specs/task-board.md` 或 policy。
 - 需要 runtime dependency、network、credential 或 production data。
-- Baseline 先失敗，或 verifier 回 exit 2。
+- Baseline verifier 回 exit 2；或回 exit 1，但失敗的不是本 task 要修的目標。
+- 任一後續 verifier 回 exit 2。
 - `bounded-loop.sh step` 進入 `escalated` 或 `blocked`。
 
 ## Return
