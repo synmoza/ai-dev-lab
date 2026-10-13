@@ -6,6 +6,7 @@
       "Bash(scripts/guard-command.sh task-board *)",
       "Bash(scripts/guard-command.sh git-status)",
       "Bash(scripts/bounded-loop.sh step)",
+      "Bash(scripts/bounded-loop.sh step TB-LAB-*)",
       "Bash(scripts/bounded-loop.sh status)",
       "Bash(git status *)",
       "Bash(git diff *)",
