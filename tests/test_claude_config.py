@@ -146,7 +146,8 @@ def test_settings_enforce_sandbox_and_deny_side_effects() -> None:
         "WebFetch",
     ):
         assert rule in deny
-    assert "Bash(git commit *)" in settings["permissions"]["ask"]
+    assert "Bash(git add *)" in deny
+    assert "Bash(git commit *)" in deny
     sandbox = settings["sandbox"]
     assert sandbox["enabled"] is True
     assert sandbox["allowUnsandboxedCommands"] is False

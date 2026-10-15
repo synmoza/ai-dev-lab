@@ -8,9 +8,9 @@ The rules above are enforced in this repository, not only described:
   `policies/agent-authority.yaml`. The main conversation is the maker and may
   write only its `writable_paths`. The `checker` subagent writes nothing and
   runs only the verifier and read-only Git commands.
-- `.claude/settings.json` denies push, merge, network tools, bootstrap,
-  Evidence collection, and loop reset, and asks before `git add` and
-  `git commit`.
+- `.claude/settings.json` denies `git add`, `git commit`, push, merge,
+  network tools, bootstrap, Evidence collection, and loop reset. The human
+  owner stages and commits.
 - The Bash sandbox (bubblewrap, WSL2/Linux) blocks writes to Spec, task,
   policy, script, and config paths and has no network access. Unsandboxed
   retries are disabled.

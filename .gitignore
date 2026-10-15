@@ -18,3 +18,16 @@ evidence/loop-runs/*
 .ai-loop/events.jsonl
 .ai-loop/checkpoints/*
 !.ai-loop/checkpoints/.gitkeep
+# Claude Code Bash sandbox (bubblewrap) mounts /dev/null over these paths in
+# the repo root during a session; they are not real files.
+/.bash_profile
+/.bashrc
+/.gitconfig
+/.gitmodules
+/.idea
+/.mcp.json
+/.profile
+/.ripgreprc
+/.vscode
+/.zprofile
+/.zshrc

@@ -147,8 +147,8 @@ session 內生效，不保護其他程序。
   `policies/agent-authority.yaml`。主對話是 maker，只能寫 `writable_paths`；
   `checker` subagent 不能寫檔，Bash 只能跑 verifier 與唯讀 Git。
   無法判讀的呼叫一律擋下（fail closed）。
-- `.claude/settings.json`：deny push、merge、網路工具、bootstrap、
-  Evidence 收集與 loop reset；`git add`／`git commit` 需人確認。
+- `.claude/settings.json`：deny `git add`、`git commit`、push、merge、
+  網路工具、bootstrap、Evidence 收集與 loop reset；暫存與 commit 由人執行。
 - Bash sandbox（bubblewrap＋socat）：Spec、task、policy、scripts 與設定
   路徑 OS 層唯讀，無對外網路，停用 unsandboxed retry；sandbox 起不來時
   Claude Code 直接拒絕啟動。

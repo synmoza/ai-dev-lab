@@ -14,13 +14,13 @@
       "Bash(git show *)"
     ],
     "ask": [
-      "Bash(git add *)",
-      "Bash(git commit *)",
       "Bash(git switch *)",
       "Bash(scripts/bounded-loop.sh run)",
       "Bash(dangerouslyDisableSandbox:true)"
     ],
     "deny": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(git merge *)",
       "Bash(git rebase *)",
