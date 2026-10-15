@@ -83,13 +83,20 @@ scripts/verify.sh full
 
 ## 已驗證基線
 
-在隔離副本與 Python 3.12 環境執行 `scripts/verify.sh full`：
+`scripts/verify.sh full` 的門檻：Ruff、Black、isort 全部通過，pytest 全部通過，
+coverage 不低於 contract 的 80%。
 
-- Ruff、Black、isort 全部通過。
-- `103 passed`。
-- Coverage `89.35%`，高於 contract 的 80%。
-- macOS 本機驗證通過；GitHub Actions 會另跑 Linux gate。
-- Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）驗證通過。
+本 README 不記錄測試數與 coverage 數字，避免每次改動後與事實不符。某個
+commit 的實際結果以下列來源為準：
+
+- GitHub Actions 該 commit 的 `verify / full-verification` 紀錄。
+- `scripts/collect-evidence.sh full` 產生的 `evidence/runs/<run>/`：
+  `verifier.out` 有完整輸出，`manifest.json` 記錄 commit、環境與工具版本。
+
+曾驗證通過的環境：
+
+- macOS 本機；GitHub Actions 的 Linux gate。
+- Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）。
 - Windows PowerShell bootstrap 尚未驗證。
 
 這些結果只適用於對應 commit 與 dependency profile；不要外推成
@@ -147,8 +154,8 @@ session 內生效，不保護其他程序。
   `policies/agent-authority.yaml`。主對話是 maker，只能寫 `writable_paths`；
   `checker` subagent 不能寫檔，Bash 只能跑 verifier 與唯讀 Git。
   無法判讀的呼叫一律擋下（fail closed）。
-- `.claude/settings.json`：deny push、merge、網路工具、bootstrap、
-  Evidence 收集與 loop reset；`git add`／`git commit` 需人確認。
+- `.claude/settings.json`：deny `git add`、`git commit`、push、merge、
+  網路工具、bootstrap、Evidence 收集與 loop reset；暫存與 commit 由人執行。
 - Bash sandbox（bubblewrap＋socat）：Spec、task、policy、scripts 與設定
   路徑 OS 層唯讀，無對外網路，停用 unsandboxed retry；sandbox 起不來時
   Claude Code 直接拒絕啟動。

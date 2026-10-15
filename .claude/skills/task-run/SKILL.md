@@ -35,6 +35,4 @@ the allowed scope are earlier work on this same task; build on them.
    `git log --diff-filter=A --format=%h -- tasks/$0.md`.
 9. Report: status, changed files, TAC/SAC mapping, commands with exit codes,
    loop evidence paths, the checker decision, and known gaps. Propose a commit
-   message, but let the human decide whether to commit. If the test count or
-   coverage changed, say so: the human owner updates the README baseline after
-   the checker passes; it is not part of the maker's diff.
+   message; the human owner stages and commits.

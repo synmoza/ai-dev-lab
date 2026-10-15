@@ -31,9 +31,7 @@
 6. The checker validates against the task's approval commit. The loop binds
    to the task named in `step`; a new task starts fresh only after the
    previous one is `done`, and a stuck loop needs the human owner's reset.
-   README baseline
-   numbers (test count, coverage) are updated by the human owner after the
-   checker passes, never in the maker's diff.
+   Test counts and coverage live in CI and Evidence, not in README.
 
 # Canonical commands
 

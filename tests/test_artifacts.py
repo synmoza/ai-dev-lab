@@ -183,8 +183,6 @@ def test_readme_discloses_pedagogical_boundary() -> None:
 
     assert "不是" in readme
     assert "production" in readme
-    assert "103 passed" in readme
-    assert "89.35%" in readme
     assert "GitHub Actions" in readme
     assert "Windows PowerShell" in readme
     assert project["project"]["version"] == "1.0.0"
@@ -312,3 +310,59 @@ def test_docs_distinguish_scope_from_runtime_isolation() -> None:
     assert "- SAC-09：" in spec
     assert "`--store` 接受使用者指定的本機路徑" in spec
     assert "不是 OS sandbox 證明" in task
+
+
+def non_executable_scripts(repo: Path) -> list[str]:
+    """Return `scripts/*.sh` paths whose Git index mode is not 100755."""
+    listing = subprocess.run(
+        ["git", "ls-files", "-s", "-z"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    findings = []
+    for entry in listing.split("\0"):
+        if not entry:
+            continue
+        meta, _, path = entry.partition("\t")
+        mode = meta.split()[0]
+        directory, _, name = path.rpartition("/")
+        if directory == "scripts" and name.endswith(".sh") and mode != "100755":
+            findings.append(path)
+    return findings
+
+
+def test_tracked_scripts_are_executable_in_git_index() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "--", "scripts/"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+
+    assert any(path.endswith(".sh") for path in tracked)
+    assert non_executable_scripts(ROOT) == []
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+
+def test_non_executable_scripts_reports_index_mode_100644(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-q")
+    (tmp_path / "scripts" / "nested").mkdir(parents=True)
+    for name in ("scripts/run.sh", "scripts/plain.sh", "scripts/notes.md"):
+        (tmp_path / name).write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+    (tmp_path / "scripts" / "nested" / "deep.sh").write_text("", encoding="utf-8")
+    (tmp_path / "top.sh").write_text("", encoding="utf-8")
+    _git(tmp_path, "add", "--", ".")
+    _git(tmp_path, "update-index", "--chmod=-x", "--", "scripts/plain.sh")
+    _git(tmp_path, "update-index", "--chmod=+x", "--", "scripts/run.sh")
+
+    assert non_executable_scripts(tmp_path) == ["scripts/plain.sh"]
+
+    _git(tmp_path, "update-index", "--chmod=+x", "--", "scripts/plain.sh")
+
+    assert non_executable_scripts(tmp_path) == []
