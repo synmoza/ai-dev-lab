@@ -83,13 +83,20 @@ scripts/verify.sh full
 
 ## 已驗證基線
 
-在隔離副本與 Python 3.12 環境執行 `scripts/verify.sh full`：
+`scripts/verify.sh full` 的門檻：Ruff、Black、isort 全部通過，pytest 全部通過，
+coverage 不低於 contract 的 80%。
 
-- Ruff、Black、isort 全部通過。
-- `103 passed`。
-- Coverage `89.35%`，高於 contract 的 80%。
-- macOS 本機驗證通過；GitHub Actions 會另跑 Linux gate。
-- Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）驗證通過。
+本 README 不記錄測試數與 coverage 數字，避免每次改動後與事實不符。某個
+commit 的實際結果以下列來源為準：
+
+- GitHub Actions 該 commit 的 `verify / full-verification` 紀錄。
+- `scripts/collect-evidence.sh full` 產生的 `evidence/runs/<run>/`：
+  `verifier.out` 有完整輸出，`manifest.json` 記錄 commit、環境與工具版本。
+
+曾驗證通過的環境：
+
+- macOS 本機；GitHub Actions 的 Linux gate。
+- Windows 10 + WSL2（Ubuntu 26.04、uv 提供的 Python 3.12）。
 - Windows PowerShell bootstrap 尚未驗證。
 
 這些結果只適用於對應 commit 與 dependency profile；不要外推成

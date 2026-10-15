@@ -24,8 +24,7 @@ Procedure:
    `git log --diff-filter=A --format=%h -- tasks/TB-LAB-NNN.md`. Commits at or
    before that base belong to the human owner and are not the maker's scope.
    Confirm every changed path after the base is inside the task's Allowed
-   scope. A README baseline update is the human owner's step after you pass;
-   if one appears after the base, report it as out of scope.
+   scope; anything else after the base, README included, is out of scope.
    Empty untracked dotfiles in the repo root (`.bashrc`, `.gitconfig`,
    `.mcp.json`, `.idea`, `.vscode`, and similar) are mount placeholders the
    Bash sandbox creates during a session and removes afterwards; list them
